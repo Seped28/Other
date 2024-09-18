@@ -1,0 +1,1171 @@
+//***********************************************************************
+//    Function: Extract greenspace exposure from Landsat imagery for global urban cities
+//     Description: 20-year Greenspace fraction exposure of global urban cities
+//           Input: Landsat maximum composited NDVI-reflectnce  map from 2000-2020 & worldpop population data
+//          Output: Greenspace exposure from 2000-2020
+//          Update: None
+//       Reference: None
+//         Version: 1.0
+//       Copyright: FUSE lab @ HKU, 2023
+//         Created: 17-08-23
+//   Last revision: 17-08-23
+//***********************************************************************
+
+//************************ Part 0: Public parameter *********************
+
+// S-G smooth package
+var oeel=require('users/OEEL/lib:loadAll');
+
+// Water mask
+var mainlands = ee.ImageCollection("projects/sat-io/open-datasets/OSM_waterLayer");
+var water_mask = mainlands.mosaic().unmask(6).gt(3); 
+
+// Landsat composited maximum NDVI-reflectance dataset
+var imageCollection_2000_L5 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L5_NDVI_Composite_2000')
+var imageCollection_2000_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2000')
+var imageCollection_2001_L5 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L5_NDVI_Composite_2001')
+var imageCollection_2001_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2001')
+var imageCollection_2002_L5 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L5_NDVI_Composite_2002')
+var imageCollection_2002_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2002')
+var imageCollection_2003_L5 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L5_NDVI_Composite_2003')
+var imageCollection_2003_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2003')
+var imageCollection_2004_L5 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L5_NDVI_Composite_2004')
+var imageCollection_2004_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2004')
+var imageCollection_2005_L5 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L5_NDVI_Composite_2005')
+var imageCollection_2005_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2005')
+var imageCollection_2006_L5 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L5_NDVI_Composite_2006')
+var imageCollection_2006_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2006')
+var imageCollection_2007_L5 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L5_NDVI_Composite_2007')
+var imageCollection_2007_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2007')
+var imageCollection_2008_L5 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L5_NDVI_Composite_2008')
+var imageCollection_2008_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2008')
+var imageCollection_2009_L5 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L5_NDVI_Composite_2009')
+var imageCollection_2009_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2009')
+var imageCollection_2010_L5 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L5_NDVI_Composite_2010')
+var imageCollection_2010_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2010')
+var imageCollection_2011_L5 = ee.ImageCollection('projects/ee-wsh-project27/assets/Global_Urban_L5_NDVI_Composite_2011')
+var imageCollection_2011_L7 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2011')
+var Landsat_2012 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2012')
+var Landsat_2013 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L7_NDVI_Composite_2013')
+var Landsat_2014 = ee.ImageCollection('projects/ee-wsh-project27/assets/Global_Urban_L8_NDVI_Composite_2014')
+var Landsat_2015 = ee.ImageCollection('projects/ee-wsh-project27/assets/Global_Urban_L8_NDVI_Composite_2015')
+var Landsat_2016 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L8_NDVI_Composite_2016')
+var Landsat_2017 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L8_NDVI_Composite_2017')
+var Landsat_2018 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L8_NDVI_Composite_2018')
+var Landsat_2019 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L8_NDVI_Composite_2019')
+var Landsat_2020 = ee.ImageCollection('projects/ee-wsh-project28/assets/Global_Urban_L8_NDVI_Composite_2020')
+
+var Landsat_2000 = imageCollection_2000_L5.merge(imageCollection_2000_L7);
+var Landsat_2001 = imageCollection_2001_L5.merge(imageCollection_2001_L7);
+var Landsat_2002 = imageCollection_2002_L5.merge(imageCollection_2002_L7);
+var Landsat_2003 = imageCollection_2003_L5.merge(imageCollection_2003_L7);
+var Landsat_2004 = imageCollection_2004_L5.merge(imageCollection_2004_L7);
+var Landsat_2005 = imageCollection_2005_L5.merge(imageCollection_2005_L7);
+var Landsat_2006 = imageCollection_2006_L5.merge(imageCollection_2006_L7);
+var Landsat_2007 = imageCollection_2007_L5.merge(imageCollection_2007_L7);
+var Landsat_2008 = imageCollection_2008_L5.merge(imageCollection_2008_L7);
+var Landsat_2009 = imageCollection_2009_L5.merge(imageCollection_2009_L7);
+var Landsat_2010 = imageCollection_2010_L5.merge(imageCollection_2010_L7);
+var Landsat_2011 = imageCollection_2011_L5.merge(imageCollection_2011_L7);
+
+
+// Population 
+var pop_proj = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2020-01-01','2021-01-01').first().projection()
+var pop_2000 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2000-01-01','2001-01-01').mosaic()
+var pop_2001 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2001-01-01','2002-01-01').mosaic()
+var pop_2002 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2002-01-01','2003-01-01').mosaic()
+var pop_2003 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2003-01-01','2004-01-01').mosaic()
+var pop_2004 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2004-01-01','2005-01-01').mosaic()
+var pop_2005 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2005-01-01','2006-01-01').mosaic()
+var pop_2006 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2006-01-01','2007-01-01').mosaic()
+var pop_2007 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2007-01-01','2008-01-01').mosaic()
+var pop_2008 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2008-01-01','2009-01-01').mosaic()
+var pop_2009 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2009-01-01','2010-01-01').mosaic()
+var pop_2010 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2010-01-01','2011-01-01').mosaic()
+var pop_2011 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2011-01-01','2012-01-01').mosaic()
+var pop_2012 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2012-01-01','2013-01-01').mosaic()
+var pop_2013 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2013-01-01','2014-01-01').mosaic()
+var pop_2014 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2014-01-01','2015-01-01').mosaic()
+var pop_2015 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2015-01-01','2016-01-01').mosaic()
+var pop_2016 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2016-01-01','2017-01-01').mosaic()
+var pop_2017 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2017-01-01','2018-01-01').mosaic()
+var pop_2018 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2018-01-01','2019-01-01').mosaic()
+var pop_2019 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2019-01-01','2020-01-01').mosaic()
+var pop_2020 = ee.ImageCollection("WorldPop/GP/100m/pop").filterDate('2020-01-01','2021-01-01').mosaic()
+
+// GUB city boundary
+var GUB = ee.FeatureCollection('users/wsh/Global_City_lt_100km2')
+
+// ROI for three pure endmembers (vegetaion, bare, water body)
+var vegetation = ee.Geometry.Polygon([[-76.40813278097205,36.68787884225896],[-76.41081498998695,36.684282505330444],[-76.40375541585975,36.68466107503182],[-76.40813278097205,36.68787884225896]]);
+var bare = ee.Geometry.Polygon([[-76.29322903595613,36.942127258174814],[-76.29501002274202,36.940240746507534],[-76.29203813515352,36.940189295535035],[-76.29315393410371,36.94210153332984]])
+var water = ee.Geometry.Polygon([[-82.6899167807763,42.53020197997786],[-82.69123642761163,42.5286286053024],[-82.68783538658074,42.52830443775703],[-82.6899167807763,42.53020197997786]])
+
+// Band selection
+var bands = ['B2','B3','B4','B5','NDVI','NDWI'] 
+
+// kernel function
+var kernelcore = ee.Kernel.circle({
+  radius: 5, units: 'pixels', normalize: true
+});
+
+//*************************** Part 1: Main function *********************
+
+// S1. unmixing greenspace fraction 
+// S1.1. select charactetistic bands
+var NdviMax_2000 = Landsat_2000.select(bands).mosaic().divide(1000)
+var NdviMax_2001 = Landsat_2001.select(bands).mosaic().divide(1000)
+var NdviMax_2002 = Landsat_2002.select(bands).mosaic().divide(1000)
+var NdviMax_2003 = Landsat_2003.select(bands).mosaic().divide(1000)
+var NdviMax_2004 = Landsat_2004.select(bands).mosaic().divide(1000)
+var NdviMax_2005 = Landsat_2005.select(bands).mosaic().divide(1000)
+var NdviMax_2006 = Landsat_2006.select(bands).mosaic().divide(1000)
+var NdviMax_2007 = Landsat_2007.select(bands).mosaic().divide(1000)
+var NdviMax_2008 = Landsat_2008.select(bands).mosaic().divide(1000)
+var NdviMax_2009 = Landsat_2009.select(bands).mosaic().divide(1000)
+var NdviMax_2010 = Landsat_2010.select(bands).mosaic().divide(1000)
+var NdviMax_2011 = Landsat_2011.select(bands).mosaic().divide(1000)
+var NdviMax_2012 = Landsat_2012.select(bands).mosaic().divide(1000)
+var NdviMax_2013 = Landsat_2013.select(bands).mosaic().divide(1000)
+var NdviMax_2014 = Landsat_2014.select(bands).mosaic().divide(1000)
+var NdviMax_2015 = Landsat_2015.select(bands).mosaic().divide(1000)
+var NdviMax_2016 = Landsat_2016.select(bands).mosaic().divide(1000)
+var NdviMax_2017 = Landsat_2017.select(bands).mosaic().divide(1000)
+var NdviMax_2018 = Landsat_2018.select(bands).mosaic().divide(1000)
+var NdviMax_2019 = Landsat_2019.select(bands).mosaic().divide(1000)
+var NdviMax_2020 = Landsat_2020.select(bands).mosaic().divide(1000)
+
+// Vegetation
+var veg_mask_2000 = NdviMax_2000.select('NDVI').gt(0.80);
+var veg_mask_2001 = NdviMax_2001.select('NDVI').gt(0.80);
+var veg_mask_2002 = NdviMax_2002.select('NDVI').gt(0.80);
+var veg_mask_2003 = NdviMax_2003.select('NDVI').gt(0.80);
+var veg_mask_2004 = NdviMax_2004.select('NDVI').gt(0.80);
+var veg_mask_2005 = NdviMax_2005.select('NDVI').gt(0.80);
+var veg_mask_2006 = NdviMax_2006.select('NDVI').gt(0.80);
+var veg_mask_2007 = NdviMax_2007.select('NDVI').gt(0.80);
+var veg_mask_2008 = NdviMax_2008.select('NDVI').gt(0.80);
+var veg_mask_2009 = NdviMax_2009.select('NDVI').gt(0.80);
+var veg_mask_2010 = NdviMax_2010.select('NDVI').gt(0.80);
+var veg_mask_2011 = NdviMax_2011.select('NDVI').gt(0.80);
+var veg_mask_2012 = NdviMax_2012.select('NDVI').gt(0.80);
+var veg_mask_2013 = NdviMax_2013.select('NDVI').gt(0.80);
+var veg_mask_2014 = NdviMax_2014.select('NDVI').gt(0.80);
+var veg_mask_2015 = NdviMax_2015.select('NDVI').gt(0.80);
+var veg_mask_2016 = NdviMax_2016.select('NDVI').gt(0.80);
+var veg_mask_2017 = NdviMax_2017.select('NDVI').gt(0.80);
+var veg_mask_2018 = NdviMax_2018.select('NDVI').gt(0.80);
+var veg_mask_2019 = NdviMax_2019.select('NDVI').gt(0.80);
+var veg_mask_2020 = NdviMax_2020.select('NDVI').gt(0.80);
+
+var veg_col_2000 = NdviMax_2000.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2001 = NdviMax_2001.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2002 = NdviMax_2002.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2003 = NdviMax_2003.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2004 = NdviMax_2004.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2005 = NdviMax_2005.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2006 = NdviMax_2006.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2007 = NdviMax_2007.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2008 = NdviMax_2008.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2009 = NdviMax_2009.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2010 = NdviMax_2010.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2011 = NdviMax_2011.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2012 = NdviMax_2012.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2013 = NdviMax_2013.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2014 = NdviMax_2014.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2015 = NdviMax_2015.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2016 = NdviMax_2016.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2017 = NdviMax_2017.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2018 = NdviMax_2018.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2019 = NdviMax_2019.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+var veg_col_2020 = NdviMax_2020.updateMask(veg_mask_2000).updateMask(veg_mask_2001).updateMask(veg_mask_2002).updateMask(veg_mask_2003).updateMask(veg_mask_2004).updateMask(veg_mask_2005).updateMask(veg_mask_2006).updateMask(veg_mask_2007).updateMask(veg_mask_2008).updateMask(veg_mask_2009).updateMask(veg_mask_2010).updateMask(veg_mask_2011).updateMask(veg_mask_2012).updateMask(veg_mask_2013).updateMask(veg_mask_2014).updateMask(veg_mask_2015).updateMask(veg_mask_2016).updateMask(veg_mask_2017).updateMask(veg_mask_2018).updateMask(veg_mask_2019).updateMask(veg_mask_2020).select(['B4','B5','B3','NDVI']);
+
+// soil background 
+var soil_mask_2000 = NdviMax_2000.select('NDVI').lt(0.20);
+var soil_mask_2001 = NdviMax_2001.select('NDVI').lt(0.20);
+var soil_mask_2002 = NdviMax_2002.select('NDVI').lt(0.20);
+var soil_mask_2003 = NdviMax_2003.select('NDVI').lt(0.20);
+var soil_mask_2004 = NdviMax_2004.select('NDVI').lt(0.20);
+var soil_mask_2005 = NdviMax_2005.select('NDVI').lt(0.20);
+var soil_mask_2006 = NdviMax_2006.select('NDVI').lt(0.20);
+var soil_mask_2007 = NdviMax_2007.select('NDVI').lt(0.20);
+var soil_mask_2008 = NdviMax_2008.select('NDVI').lt(0.20);
+var soil_mask_2009 = NdviMax_2009.select('NDVI').lt(0.20);
+var soil_mask_2010 = NdviMax_2010.select('NDVI').lt(0.20);
+var soil_mask_2011 = NdviMax_2011.select('NDVI').lt(0.20);
+var soil_mask_2012 = NdviMax_2012.select('NDVI').lt(0.20);
+var soil_mask_2013 = NdviMax_2013.select('NDVI').lt(0.20);
+var soil_mask_2014 = NdviMax_2014.select('NDVI').lt(0.20);
+var soil_mask_2015 = NdviMax_2015.select('NDVI').lt(0.20);
+var soil_mask_2016 = NdviMax_2016.select('NDVI').lt(0.20);
+var soil_mask_2017 = NdviMax_2017.select('NDVI').lt(0.20);
+var soil_mask_2018 = NdviMax_2018.select('NDVI').lt(0.20);
+var soil_mask_2019 = NdviMax_2019.select('NDVI').lt(0.20);
+var soil_mask_2020 = NdviMax_2020.select('NDVI').lt(0.20);
+
+var soil_col_2000 = NdviMax_2000.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2001 = NdviMax_2001.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2002 = NdviMax_2002.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2003 = NdviMax_2003.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2004 = NdviMax_2004.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2005 = NdviMax_2005.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2006 = NdviMax_2006.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2007 = NdviMax_2007.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2008 = NdviMax_2008.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2009 = NdviMax_2009.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2010 = NdviMax_2010.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2011 = NdviMax_2011.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2012 = NdviMax_2012.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2013 = NdviMax_2013.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2014 = NdviMax_2014.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2015 = NdviMax_2015.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2016 = NdviMax_2016.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2017 = NdviMax_2017.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2018 = NdviMax_2018.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2019 = NdviMax_2019.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+var soil_col_2020 = NdviMax_2020.updateMask(soil_mask_2000).updateMask(soil_mask_2001).updateMask(soil_mask_2002).updateMask(soil_mask_2003).updateMask(soil_mask_2004).updateMask(soil_mask_2005).updateMask(soil_mask_2006).updateMask(soil_mask_2007).updateMask(soil_mask_2008).updateMask(soil_mask_2009).updateMask(soil_mask_2010).updateMask(soil_mask_2011).updateMask(soil_mask_2012).updateMask(soil_mask_2013).updateMask(soil_mask_2014).updateMask(soil_mask_2015).updateMask(soil_mask_2016).updateMask(soil_mask_2017).updateMask(soil_mask_2018).updateMask(soil_mask_2019).updateMask(soil_mask_2020).select(['B4','B5','B3','NDVI']);
+
+// water 
+var water_mask_2000 = NdviMax_2000.select('NDWI').gt(0.0);
+var water_mask_2001 = NdviMax_2001.select('NDWI').gt(0.0);
+var water_mask_2002 = NdviMax_2002.select('NDWI').gt(0.0);
+var water_mask_2003 = NdviMax_2003.select('NDWI').gt(0.0);
+var water_mask_2004 = NdviMax_2004.select('NDWI').gt(0.0);
+var water_mask_2005 = NdviMax_2005.select('NDWI').gt(0.0);
+var water_mask_2006 = NdviMax_2006.select('NDWI').gt(0.0);
+var water_mask_2007 = NdviMax_2007.select('NDWI').gt(0.0);
+var water_mask_2008 = NdviMax_2008.select('NDWI').gt(0.0);
+var water_mask_2009 = NdviMax_2009.select('NDWI').gt(0.0);
+var water_mask_2010 = NdviMax_2010.select('NDWI').gt(0.0);
+var water_mask_2011 = NdviMax_2011.select('NDWI').gt(0.0);
+var water_mask_2012 = NdviMax_2012.select('NDWI').gt(0.0);
+var water_mask_2013 = NdviMax_2013.select('NDWI').gt(0.0);
+var water_mask_2014 = NdviMax_2014.select('NDWI').gt(0.0);
+var water_mask_2015 = NdviMax_2015.select('NDWI').gt(0.0);
+var water_mask_2016 = NdviMax_2016.select('NDWI').gt(0.0);
+var water_mask_2017 = NdviMax_2017.select('NDWI').gt(0.0);
+var water_mask_2018 = NdviMax_2018.select('NDWI').gt(0.0);
+var water_mask_2019 = NdviMax_2019.select('NDWI').gt(0.0);
+var water_mask_2020 = NdviMax_2020.select('NDWI').gt(0.0);
+
+var water_col_2000 = NdviMax_2000.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2001 = NdviMax_2001.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2002 = NdviMax_2002.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2003 = NdviMax_2003.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2004 = NdviMax_2004.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2005 = NdviMax_2005.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2006 = NdviMax_2006.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2007 = NdviMax_2007.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2008 = NdviMax_2008.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2009 = NdviMax_2009.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2010 = NdviMax_2010.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2011 = NdviMax_2011.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2012 = NdviMax_2012.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2013 = NdviMax_2013.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2014 = NdviMax_2014.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2015 = NdviMax_2015.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2016 = NdviMax_2016.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2017 = NdviMax_2017.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2018 = NdviMax_2018.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2019 = NdviMax_2019.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+var water_col_2020 = NdviMax_2020.updateMask(water_mask_2000).updateMask(water_mask_2001).updateMask(water_mask_2002).updateMask(water_mask_2003).updateMask(water_mask_2004).updateMask(water_mask_2005).updateMask(water_mask_2006).updateMask(water_mask_2007).updateMask(water_mask_2008).updateMask(water_mask_2009).updateMask(water_mask_2010).updateMask(water_mask_2011).updateMask(water_mask_2012).updateMask(water_mask_2013).updateMask(water_mask_2014).updateMask(water_mask_2015).updateMask(water_mask_2016).updateMask(water_mask_2017).updateMask(water_mask_2018).updateMask(water_mask_2019).updateMask(water_mask_2020).select(['B4','B5','B3','NDVI']);
+
+
+// S1.2. generate the greenspace fractional maps using global endmembers for reference
+var bareMean_2000 = NdviMax_2000.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2000 = NdviMax_2000.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2000 = NdviMax_2000.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2001 = NdviMax_2001.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2001 = NdviMax_2001.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2001 = NdviMax_2001.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2002 = NdviMax_2002.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2002 = NdviMax_2002.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2002 = NdviMax_2002.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2003 = NdviMax_2003.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2003 = NdviMax_2003.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2003 = NdviMax_2003.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2004 = NdviMax_2004.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2004 = NdviMax_2004.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2004 = NdviMax_2004.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2005 = NdviMax_2005.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2005 = NdviMax_2005.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2005 = NdviMax_2005.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2006 = NdviMax_2006.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2006 = NdviMax_2006.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2006 = NdviMax_2006.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2007 = NdviMax_2007.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2007 = NdviMax_2007.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2007 = NdviMax_2007.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2008 = NdviMax_2008.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2008 = NdviMax_2008.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2008 = NdviMax_2008.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2009 = NdviMax_2009.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2009 = NdviMax_2009.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2009 = NdviMax_2009.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2010 = NdviMax_2010.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2010 = NdviMax_2010.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2010 = NdviMax_2010.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2011 = NdviMax_2011.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2011 = NdviMax_2011.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2011 = NdviMax_2011.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2012 = NdviMax_2012.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2012 = NdviMax_2012.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2012 = NdviMax_2012.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2013 = NdviMax_2013.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2013 = NdviMax_2013.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2013 = NdviMax_2013.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2014 = NdviMax_2014.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2014 = NdviMax_2014.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2014 = NdviMax_2014.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2015 = NdviMax_2015.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2015 = NdviMax_2015.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2015 = NdviMax_2015.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2016 = NdviMax_2016.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2016 = NdviMax_2016.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2016 = NdviMax_2016.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2017 = NdviMax_2017.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2017 = NdviMax_2017.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2017 = NdviMax_2017.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2018 = NdviMax_2018.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2018 = NdviMax_2018.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2018 = NdviMax_2018.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2019 = NdviMax_2019.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2019 = NdviMax_2019.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2019 = NdviMax_2019.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+var bareMean_2020 = NdviMax_2020.reduceRegion(ee.Reducer.mean(), bare, 30).values();
+var waterMean_2020 = NdviMax_2020.reduceRegion(ee.Reducer.mean(), water, 30).values();
+var vegMean_2020 = NdviMax_2020.reduceRegion(ee.Reducer.mean(), vegetation, 30).values();
+
+
+// S1.3. conduct unmixing
+var constrainedLandsat_2000 = NdviMax_2000.unmix([bareMean_2000, vegMean_2000, waterMean_2000], true, true).updateMask(water_mask);
+var constrainedLandsat_2001 = NdviMax_2001.unmix([bareMean_2001, vegMean_2001, waterMean_2001], true, true).updateMask(water_mask);
+var constrainedLandsat_2002 = NdviMax_2002.unmix([bareMean_2002, vegMean_2002, waterMean_2002], true, true).updateMask(water_mask);
+var constrainedLandsat_2003 = NdviMax_2003.unmix([bareMean_2003, vegMean_2003, waterMean_2003], true, true).updateMask(water_mask);
+var constrainedLandsat_2004 = NdviMax_2004.unmix([bareMean_2004, vegMean_2004, waterMean_2004], true, true).updateMask(water_mask);
+var constrainedLandsat_2005 = NdviMax_2005.unmix([bareMean_2005, vegMean_2005, waterMean_2005], true, true).updateMask(water_mask);
+var constrainedLandsat_2006 = NdviMax_2006.unmix([bareMean_2006, vegMean_2006, waterMean_2006], true, true).updateMask(water_mask);
+var constrainedLandsat_2007 = NdviMax_2007.unmix([bareMean_2007, vegMean_2007, waterMean_2007], true, true).updateMask(water_mask);
+var constrainedLandsat_2008 = NdviMax_2008.unmix([bareMean_2008, vegMean_2008, waterMean_2008], true, true).updateMask(water_mask);
+var constrainedLandsat_2009 = NdviMax_2009.unmix([bareMean_2009, vegMean_2009, waterMean_2009], true, true).updateMask(water_mask);
+var constrainedLandsat_2010 = NdviMax_2010.unmix([bareMean_2010, vegMean_2010, waterMean_2010], true, true).updateMask(water_mask);
+var constrainedLandsat_2011 = NdviMax_2011.unmix([bareMean_2011, vegMean_2011, waterMean_2011], true, true).updateMask(water_mask);
+var constrainedLandsat_2012 = NdviMax_2012.unmix([bareMean_2012, vegMean_2012, waterMean_2012], true, true).updateMask(water_mask);
+var constrainedLandsat_2013 = NdviMax_2013.unmix([bareMean_2013, vegMean_2013, waterMean_2013], true, true).updateMask(water_mask);
+var constrainedLandsat_2014 = NdviMax_2014.unmix([bareMean_2014, vegMean_2014, waterMean_2014], true, true).updateMask(water_mask);
+var constrainedLandsat_2015 = NdviMax_2015.unmix([bareMean_2015, vegMean_2015, waterMean_2015], true, true).updateMask(water_mask);
+var constrainedLandsat_2016 = NdviMax_2016.unmix([bareMean_2016, vegMean_2016, waterMean_2016], true, true).updateMask(water_mask);
+var constrainedLandsat_2017 = NdviMax_2017.unmix([bareMean_2017, vegMean_2017, waterMean_2017], true, true).updateMask(water_mask);
+var constrainedLandsat_2018 = NdviMax_2018.unmix([bareMean_2018, vegMean_2018, waterMean_2018], true, true).updateMask(water_mask);
+var constrainedLandsat_2019 = NdviMax_2019.unmix([bareMean_2019, vegMean_2019, waterMean_2019], true, true).updateMask(water_mask);
+var constrainedLandsat_2020 = NdviMax_2020.unmix([bareMean_2020, vegMean_2020, waterMean_2020], true, true).updateMask(water_mask);
+
+
+// S1.4: get greenspace fraction across years
+var Max_veg_2000 = constrainedLandsat_2000.select('band_1').rename('veg_frac').set('system:time_start',2000);
+var Max_veg_2001 = constrainedLandsat_2001.select('band_1').rename('veg_frac').set('system:time_start',2001);
+var Max_veg_2002 = constrainedLandsat_2002.select('band_1').rename('veg_frac').set('system:time_start',2002);
+var Max_veg_2003 = constrainedLandsat_2003.select('band_1').rename('veg_frac').set('system:time_start',2003);
+var Max_veg_2004 = constrainedLandsat_2004.select('band_1').rename('veg_frac').set('system:time_start',2004);
+var Max_veg_2005 = constrainedLandsat_2005.select('band_1').rename('veg_frac').set('system:time_start',2005);
+var Max_veg_2006 = constrainedLandsat_2006.select('band_1').rename('veg_frac').set('system:time_start',2006);
+var Max_veg_2007 = constrainedLandsat_2007.select('band_1').rename('veg_frac').set('system:time_start',2007);
+var Max_veg_2008 = constrainedLandsat_2008.select('band_1').rename('veg_frac').set('system:time_start',2008);
+var Max_veg_2009 = constrainedLandsat_2009.select('band_1').rename('veg_frac').set('system:time_start',2009);
+var Max_veg_2010 = constrainedLandsat_2010.select('band_1').rename('veg_frac').set('system:time_start',2010);
+var Max_veg_2011 = constrainedLandsat_2011.select('band_1').rename('veg_frac').set('system:time_start',2011);
+var Max_veg_2012 = constrainedLandsat_2012.select('band_1').rename('veg_frac').set('system:time_start',2012);
+var Max_veg_2013 = constrainedLandsat_2013.select('band_1').rename('veg_frac').set('system:time_start',2013);
+var Max_veg_2014 = constrainedLandsat_2014.select('band_1').rename('veg_frac').set('system:time_start',2014);
+var Max_veg_2015 = constrainedLandsat_2015.select('band_1').rename('veg_frac').set('system:time_start',2015);
+var Max_veg_2016 = constrainedLandsat_2016.select('band_1').rename('veg_frac').set('system:time_start',2016);
+var Max_veg_2017 = constrainedLandsat_2017.select('band_1').rename('veg_frac').set('system:time_start',2017);
+var Max_veg_2018 = constrainedLandsat_2018.select('band_1').rename('veg_frac').set('system:time_start',2018);
+var Max_veg_2019 = constrainedLandsat_2019.select('band_1').rename('veg_frac').set('system:time_start',2019);
+var Max_veg_2020 = constrainedLandsat_2020.select('band_1').rename('veg_frac').set('system:time_start',2020);
+
+// S1.5: smooth greenspace fraction with S-G filter approach  
+var veg_all = ee.ImageCollection.fromImages([Max_veg_2000, Max_veg_2001,Max_veg_2002,Max_veg_2003,Max_veg_2004,Max_veg_2005,Max_veg_2006,Max_veg_2007,Max_veg_2008,Max_veg_2009,Max_veg_2010,Max_veg_2011,Max_veg_2012,Max_veg_2013,Max_veg_2014,Max_veg_2015,Max_veg_2016,Max_veg_2017,Max_veg_2018,Max_veg_2019,Max_veg_2020])
+var veg_all_sg = oeel.ImageCollection.SavatskyGolayFilter(veg_all,
+        ee.Filter.maxDifference(5, 'system:time_start', null, 'system:time_start'),
+        function(infromedImage,estimationImage){
+          return ee.Image.constant(ee.Number(infromedImage.get('system:time_start'))
+            .subtract(ee.Number(estimationImage.get('system:time_start'))));},
+        3,['veg_frac']).select('d_0_veg_frac').map(function(image){return image.select('d_0_veg_frac').rename('veg_frac').copyProperties(image,image.propertyNames())})
+
+veg_all_sg = veg_all_sg.toBands();
+
+// S1.6: assign S-G smoothed image to the original image
+Max_veg_2000 = veg_all_sg.select('0_veg_frac').rename('veg_frac_2000')
+Max_veg_2000 = Max_veg_2000.updateMask(Max_veg_2000.gt(0)).updateMask(Max_veg_2000.lt(1))
+
+Max_veg_2001 = veg_all_sg.select('1_veg_frac').rename('veg_frac_2001')
+Max_veg_2001 = Max_veg_2001.updateMask(Max_veg_2001.gt(0)).updateMask(Max_veg_2001.lt(1))
+
+Max_veg_2002 = veg_all_sg.select('2_veg_frac').rename('veg_frac_2002')
+Max_veg_2002 = Max_veg_2002.updateMask(Max_veg_2002.gt(0)).updateMask(Max_veg_2002.lt(1))
+
+Max_veg_2003 = veg_all_sg.select('3_veg_frac').rename('veg_frac_2003')
+Max_veg_2003 = Max_veg_2003.updateMask(Max_veg_2003.gt(0)).updateMask(Max_veg_2003.lt(1))
+
+Max_veg_2004 = veg_all_sg.select('4_veg_frac').rename('veg_frac_2004')
+Max_veg_2004 = Max_veg_2004.updateMask(Max_veg_2004.gt(0)).updateMask(Max_veg_2004.lt(1))
+
+Max_veg_2005 = veg_all_sg.select('5_veg_frac').rename('veg_frac_2005')
+Max_veg_2005 = Max_veg_2005.updateMask(Max_veg_2005.gt(0)).updateMask(Max_veg_2005.lt(1))
+
+Max_veg_2006 = veg_all_sg.select('6_veg_frac').rename('veg_frac_2006')
+Max_veg_2006 = Max_veg_2006.updateMask(Max_veg_2006.gt(0)).updateMask(Max_veg_2006.lt(1))
+
+Max_veg_2007 = veg_all_sg.select('7_veg_frac').rename('veg_frac_2007')
+Max_veg_2007 = Max_veg_2007.updateMask(Max_veg_2007.gt(0)).updateMask(Max_veg_2007.lt(1))
+
+Max_veg_2008 = veg_all_sg.select('8_veg_frac').rename('veg_frac_2008')
+Max_veg_2008 = Max_veg_2008.updateMask(Max_veg_2008.gt(0)).updateMask(Max_veg_2008.lt(1))
+
+Max_veg_2009 = veg_all_sg.select('9_veg_frac').rename('veg_frac_2009')
+Max_veg_2009 = Max_veg_2009.updateMask(Max_veg_2009.gt(0)).updateMask(Max_veg_2009.lt(1))
+
+Max_veg_2010 = veg_all_sg.select('10_veg_frac').rename('veg_frac_2010')
+Max_veg_2010 = Max_veg_2010.updateMask(Max_veg_2010.gt(0)).updateMask(Max_veg_2010.lt(1))
+
+Max_veg_2011 = veg_all_sg.select('11_veg_frac').rename('veg_frac_2011')
+Max_veg_2011 = Max_veg_2011.updateMask(Max_veg_2011.gt(0)).updateMask(Max_veg_2011.lt(1))
+
+Max_veg_2012 = veg_all_sg.select('12_veg_frac').rename('veg_frac_2012')
+Max_veg_2012 = Max_veg_2012.updateMask(Max_veg_2012.gt(0)).updateMask(Max_veg_2012.lt(1))
+
+Max_veg_2013 = veg_all_sg.select('13_veg_frac').rename('veg_frac_2013')
+Max_veg_2013 = Max_veg_2013.updateMask(Max_veg_2013.gt(0)).updateMask(Max_veg_2013.lt(1))
+
+Max_veg_2014 = veg_all_sg.select('14_veg_frac').rename('veg_frac_2014')
+Max_veg_2014 = Max_veg_2014.updateMask(Max_veg_2014.gt(0)).updateMask(Max_veg_2014.lt(1))
+
+Max_veg_2015 = veg_all_sg.select('15_veg_frac').rename('veg_frac_2015')
+Max_veg_2015 = Max_veg_2015.updateMask(Max_veg_2015.gt(0)).updateMask(Max_veg_2015.lt(1))
+
+Max_veg_2016 = veg_all_sg.select('16_veg_frac').rename('veg_frac_2016')
+Max_veg_2016 = Max_veg_2016.updateMask(Max_veg_2016.gt(0)).updateMask(Max_veg_2016.lt(1))
+
+Max_veg_2017 = veg_all_sg.select('17_veg_frac').rename('veg_frac_2017')
+Max_veg_2017 = Max_veg_2017.updateMask(Max_veg_2017.gt(0)).updateMask(Max_veg_2017.lt(1))
+
+Max_veg_2018 = veg_all_sg.select('18_veg_frac').rename('veg_frac_2018')
+Max_veg_2018 = Max_veg_2018.updateMask(Max_veg_2018.gt(0)).updateMask(Max_veg_2018.lt(1))
+
+Max_veg_2019 = veg_all_sg.select('19_veg_frac').rename('veg_frac_2019')
+Max_veg_2019 = Max_veg_2019.updateMask(Max_veg_2019.gt(0)).updateMask(Max_veg_2019.lt(1))
+
+Max_veg_2020 = veg_all_sg.select('20_veg_frac').rename('veg_frac_2020')
+Max_veg_2020 = Max_veg_2020.updateMask(Max_veg_2020.gt(0)).updateMask(Max_veg_2020.lt(1))
+
+  
+// S1.4. calculate and export greenspace exposure
+// get city ID
+var UID_list = GUB.aggregate_array('UID');
+var UID_size = UID_list.size().getInfo();
+
+var list = ee.List.sequence(0,1027);
+
+var green = list.map(function(i){
+  
+  var geometry = GUB.filter(ee.Filter.eq('UID', UID_list.get(i))).first().geometry();
+  var veg_proj = Landsat_2000.filter(ee.Filter.eq('UID', UID_list.get(i))).first().projection()
+  
+  var veg_2000 = Max_veg_2000.clip(geometry)
+  var veg_2001 = Max_veg_2001.clip(geometry)
+  var veg_2002 = Max_veg_2002.clip(geometry)
+  var veg_2003 = Max_veg_2003.clip(geometry)
+  var veg_2004 = Max_veg_2004.clip(geometry)
+  var veg_2005 = Max_veg_2005.clip(geometry)
+  var veg_2006 = Max_veg_2006.clip(geometry)
+  var veg_2007 = Max_veg_2007.clip(geometry)
+  var veg_2008 = Max_veg_2008.clip(geometry)
+  var veg_2009 = Max_veg_2009.clip(geometry)
+  var veg_2010 = Max_veg_2010.clip(geometry)
+  var veg_2011 = Max_veg_2011.clip(geometry)
+  var veg_2012 = Max_veg_2012.clip(geometry)
+  var veg_2013 = Max_veg_2013.clip(geometry)
+  var veg_2014 = Max_veg_2014.clip(geometry)
+  var veg_2015 = Max_veg_2015.clip(geometry)
+  var veg_2016 = Max_veg_2016.clip(geometry)
+  var veg_2017 = Max_veg_2017.clip(geometry)
+  var veg_2018 = Max_veg_2018.clip(geometry)
+  var veg_2019 = Max_veg_2019.clip(geometry)
+  var veg_2020 = Max_veg_2020.clip(geometry)
+   
+// S1.4.1: reproject 30-m greenspace to 100-m resolution 
+var veg_2000_ = veg_2000.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2001_ = veg_2001.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')   
+    
+var veg_2002_ = veg_2002.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2003_ = veg_2003.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2004_ = veg_2004.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2005_ = veg_2005.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2006_ = veg_2006.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2007_ = veg_2007.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2008_ = veg_2008.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')    
+    
+var veg_2009_ = veg_2009.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2010_ = veg_2010.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+
+var veg_2011_ = veg_2011.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2012_ = veg_2012.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2013_ = veg_2013.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2014_ = veg_2014.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2015_ = veg_2015.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+
+var veg_2016_ = veg_2016.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2017_ = veg_2017.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2018_ = veg_2018.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2019_ = veg_2019.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+    
+var veg_2020_ = veg_2020.reproject(veg_proj).reduceResolution({
+      reducer: ee.Reducer.mean(),
+      maxPixels: 12000
+    })
+    // reproject to worldpop at 100 m
+    .reproject({
+      crs: pop_proj,
+      scale: 100
+    }).rename('Greenspace')
+
+// S1.4.2: Smooth the image by convolving with the kernel core.
+veg_2000_ = veg_2000_.convolve(kernelcore);
+veg_2001_ = veg_2001_.convolve(kernelcore);
+veg_2002_ = veg_2002_.convolve(kernelcore);
+veg_2003_ = veg_2003_.convolve(kernelcore);
+veg_2004_ = veg_2004_.convolve(kernelcore);
+veg_2005_ = veg_2005_.convolve(kernelcore);
+veg_2006_ = veg_2006_.convolve(kernelcore);
+veg_2007_ = veg_2007_.convolve(kernelcore);
+veg_2008_ = veg_2008_.convolve(kernelcore);
+veg_2009_ = veg_2009_.convolve(kernelcore);
+veg_2010_ = veg_2010_.convolve(kernelcore);
+veg_2011_ = veg_2011_.convolve(kernelcore);
+veg_2012_ = veg_2012_.convolve(kernelcore);
+veg_2013_ = veg_2013_.convolve(kernelcore);
+veg_2014_ = veg_2014_.convolve(kernelcore);
+veg_2015_ = veg_2015_.convolve(kernelcore);
+veg_2016_ = veg_2016_.convolve(kernelcore);
+veg_2017_ = veg_2017_.convolve(kernelcore);
+veg_2018_ = veg_2018_.convolve(kernelcore);
+veg_2019_ = veg_2019_.convolve(kernelcore);
+veg_2020_ = veg_2020_.convolve(kernelcore);
+
+// S1.4.3: greenspace multiply population
+var veg_2000_mean = veg_2000_.multiply(pop_2000).updateMask(pop_2000.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2001_mean = veg_2001_.multiply(pop_2001).updateMask(pop_2001.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2002_mean = veg_2002_.multiply(pop_2002).updateMask(pop_2002.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2003_mean = veg_2003_.multiply(pop_2003).updateMask(pop_2003.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2004_mean = veg_2004_.multiply(pop_2004).updateMask(pop_2004.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2005_mean = veg_2005_.multiply(pop_2005).updateMask(pop_2005.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2006_mean = veg_2006_.multiply(pop_2006).updateMask(pop_2006.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2007_mean = veg_2007_.multiply(pop_2007).updateMask(pop_2007.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2008_mean = veg_2008_.multiply(pop_2008).updateMask(pop_2008.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2009_mean = veg_2009_.multiply(pop_2009).updateMask(pop_2009.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2010_mean = veg_2010_.multiply(pop_2010).updateMask(pop_2010.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2011_mean = veg_2011_.multiply(pop_2011).updateMask(pop_2011.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2012_mean = veg_2012_.multiply(pop_2012).updateMask(pop_2012.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2013_mean = veg_2013_.multiply(pop_2013).updateMask(pop_2013.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2014_mean = veg_2014_.multiply(pop_2014).updateMask(pop_2014.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2015_mean = veg_2015_.multiply(pop_2015).updateMask(pop_2015.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2016_mean = veg_2016_.multiply(pop_2016).updateMask(pop_2016.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2017_mean = veg_2017_.multiply(pop_2017).updateMask(pop_2017.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2018_mean = veg_2018_.multiply(pop_2018).updateMask(pop_2018.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2019_mean = veg_2019_.multiply(pop_2019).updateMask(pop_2019.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var veg_2020_mean = veg_2020_.multiply(pop_2020).updateMask(pop_2020.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+// S1.4.5: population
+var pop_2000_mean = pop_2000.updateMask(pop_2000.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2001_mean = pop_2001.updateMask(pop_2001.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2002_mean = pop_2002.updateMask(pop_2002.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2003_mean = pop_2003.updateMask(pop_2003.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2004_mean = pop_2004.updateMask(pop_2004.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2005_mean = pop_2005.updateMask(pop_2005.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2006_mean = pop_2006.updateMask(pop_2006.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2007_mean = pop_2007.updateMask(pop_2007.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2008_mean = pop_2008.updateMask(pop_2008.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2009_mean = pop_2009.updateMask(pop_2009.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2010_mean = pop_2010.updateMask(pop_2010.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2011_mean = pop_2011.updateMask(pop_2011.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2012_mean = pop_2012.updateMask(pop_2012.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2013_mean = pop_2013.updateMask(pop_2013.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2014_mean = pop_2014.updateMask(pop_2014.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2015_mean = pop_2015.updateMask(pop_2015.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2016_mean = pop_2016.updateMask(pop_2016.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2017_mean = pop_2017.updateMask(pop_2017.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2018_mean = pop_2018.updateMask(pop_2018.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2019_mean = pop_2019.updateMask(pop_2019.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+var pop_2020_mean = pop_2020.updateMask(pop_2020.gt(0)).reduceRegion({
+  reducer: ee.Reducer.mean(),
+  geometry: geometry,
+  scale: 100,
+  maxPixels: 1e13,
+  bestEffort:true,
+  tileScale:16
+});
+
+// S1.4.6: population-weighted greenspace exposure 
+var veg_expo_2000 =ee.Number(veg_2000_mean.values().get(0)).divide(ee.Number(pop_2000_mean.values().get(0)));
+var veg_expo_2001 =ee.Number(veg_2001_mean.values().get(0)).divide(ee.Number(pop_2001_mean.values().get(0)));
+var veg_expo_2002 =ee.Number(veg_2002_mean.values().get(0)).divide(ee.Number(pop_2002_mean.values().get(0)));
+var veg_expo_2003 =ee.Number(veg_2003_mean.values().get(0)).divide(ee.Number(pop_2003_mean.values().get(0)));
+var veg_expo_2004 =ee.Number(veg_2004_mean.values().get(0)).divide(ee.Number(pop_2004_mean.values().get(0)));
+var veg_expo_2005 =ee.Number(veg_2005_mean.values().get(0)).divide(ee.Number(pop_2005_mean.values().get(0)));
+var veg_expo_2006 =ee.Number(veg_2006_mean.values().get(0)).divide(ee.Number(pop_2006_mean.values().get(0)));
+var veg_expo_2007 =ee.Number(veg_2007_mean.values().get(0)).divide(ee.Number(pop_2007_mean.values().get(0)));
+var veg_expo_2008 =ee.Number(veg_2008_mean.values().get(0)).divide(ee.Number(pop_2008_mean.values().get(0)));
+var veg_expo_2009 =ee.Number(veg_2009_mean.values().get(0)).divide(ee.Number(pop_2009_mean.values().get(0)));
+var veg_expo_2010 =ee.Number(veg_2010_mean.values().get(0)).divide(ee.Number(pop_2010_mean.values().get(0)));
+var veg_expo_2011 =ee.Number(veg_2011_mean.values().get(0)).divide(ee.Number(pop_2011_mean.values().get(0)));
+var veg_expo_2012 =ee.Number(veg_2012_mean.values().get(0)).divide(ee.Number(pop_2012_mean.values().get(0)));
+var veg_expo_2013 =ee.Number(veg_2013_mean.values().get(0)).divide(ee.Number(pop_2013_mean.values().get(0)));
+var veg_expo_2014 =ee.Number(veg_2014_mean.values().get(0)).divide(ee.Number(pop_2014_mean.values().get(0)));
+var veg_expo_2015 =ee.Number(veg_2015_mean.values().get(0)).divide(ee.Number(pop_2015_mean.values().get(0)));
+var veg_expo_2016 =ee.Number(veg_2016_mean.values().get(0)).divide(ee.Number(pop_2016_mean.values().get(0)));
+var veg_expo_2017 =ee.Number(veg_2017_mean.values().get(0)).divide(ee.Number(pop_2017_mean.values().get(0)));
+var veg_expo_2018 =ee.Number(veg_2018_mean.values().get(0)).divide(ee.Number(pop_2018_mean.values().get(0)));
+var veg_expo_2019 =ee.Number(veg_2019_mean.values().get(0)).divide(ee.Number(pop_2019_mean.values().get(0)));
+var veg_expo_2020 =ee.Number(veg_2020_mean.values().get(0)).divide(ee.Number(pop_2020_mean.values().get(0)));
+  
+return ee.Array([veg_expo_2000,veg_expo_2001,veg_expo_2002,veg_expo_2003,veg_expo_2004,veg_expo_2005,veg_expo_2006,veg_expo_2007,veg_expo_2008,veg_expo_2009,veg_expo_2010,
+veg_expo_2011,veg_expo_2012,veg_expo_2013,veg_expo_2014,veg_expo_2015,veg_expo_2016,veg_expo_2017,veg_expo_2018,veg_expo_2019,veg_expo_2020])
+
+})
+
+var green_ = ee.FeatureCollection(green.map(function(point) {
+  return ee.Feature(null, {'value': point})
+}))
+
+
+// S2: Export result
+Export.table.toDrive({
+  collection: green_,
+  description: 'Global_City_Annual_Greenspace_Exposure',
+  folder: 'Global_City_Greenspace_Trend',
+  fileFormat: 'CSV'
+}); 
+
